@@ -322,9 +322,10 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
               className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
             >
               <option value="">Select one (optional)</option>
-              <option value="Research">Research</option>
-              <option value="Debugging">Debugging</option>
-              <option value="Weekly tracking">Weekly tracking</option>
+              <option value="Research synthesis">Research synthesis</option>
+              <option value="Product decision tracking">Product decision tracking</option>
+              <option value="Engineering debugging context">Engineering debugging context</option>
+              <option value="Content planning and writing">Content planning and writing</option>
               <option value="Other">Other</option>
             </select>
           </div>
