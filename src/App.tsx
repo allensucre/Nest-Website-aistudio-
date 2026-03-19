@@ -53,9 +53,7 @@ const Nav = () => {
     }`}>
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center">
-            <Layers className="text-white w-5 h-5" />
-          </div>
+          <img src="/assets/logo-nest-mark.svg" alt="Nest logo" className="w-8 h-8 rounded-lg" />
           <span className="text-xl font-semibold tracking-tight text-zinc-900">Nest</span>
         </div>
 
@@ -693,9 +691,7 @@ const Footer = () => {
     <footer className="py-12 px-6 border-t border-zinc-200">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-zinc-900 rounded flex items-center justify-center">
-            <Layers className="text-white w-4 h-4" />
-          </div>
+          <img src="/assets/logo-nest-mark.svg" alt="Nest logo" className="w-6 h-6 rounded" />
           <span className="text-lg font-semibold tracking-tight text-zinc-900">Nest</span>
         </div>
         
