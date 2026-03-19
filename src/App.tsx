@@ -163,6 +163,9 @@ const Hero = ({ onComingSoonClick }: { onComingSoonClick: () => void }) => {
         >
           Keep related tabs together, build a clear Snapshot, and Resume work without rebuilding from scratch.
         </motion.p>
+        <p className="text-sm text-zinc-500 mb-6">
+          Website access is open. Extension access is currently invite-code gated.
+        </p>
 
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -290,7 +293,7 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
       <div className="max-w-3xl mx-auto">
         <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-4">Join the waitlist</h2>
         <p className="text-zinc-600 mb-1">Get notified when Add to Chrome is live.</p>
-        <p className="text-sm text-zinc-500 mb-6">Manual Install (Beta) is available now.</p>
+        <p className="text-sm text-zinc-500 mb-6">Optional. For launch updates only. Manual Install (Beta) is available now.</p>
         {topHint ? (
           <div className="mb-4 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
             {topHint}
@@ -494,6 +497,9 @@ const BetaSteps = () => {
           <p className="text-zinc-400 max-w-2xl mx-auto text-lg">
             Nest is currently in manual beta. Follow these simple steps to install it and start archiving your context today.
           </p>
+          <p className="text-zinc-400/80 max-w-2xl mx-auto text-sm mt-3">
+            You can follow install instructions directly. Invite code check happens inside the extension.
+          </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-12">
@@ -647,6 +653,10 @@ const FAQ = () => {
     {
       q: "Can I export my data?",
       a: "Yes! You can export your entire archive as a structured JSON file or a readable Markdown document at any time from the settings menu."
+    },
+    {
+      q: "Do I need waitlist to use Nest?",
+      a: "No. Waitlist is optional. The only hard gate is extension invite code."
     }
   ];
 
@@ -698,6 +708,7 @@ const Footer = () => {
         <div className="flex gap-8 text-sm text-zinc-500">
           <a href="#" className="hover:text-zinc-900 transition-colors">Privacy</a>
           <a href="#" className="hover:text-zinc-900 transition-colors">Terms</a>
+          <a href="#waitlist" className="hover:text-zinc-900 transition-colors">Get launch updates</a>
           <a href="mailto:sucre2046@gmail.com" className="hover:text-zinc-900 transition-colors">Contact</a>
         </div>
 
@@ -727,7 +738,7 @@ export default function App() {
   const [waitlistHint, setWaitlistHint] = useState<string | null>(null);
 
   const handleComingSoonClick = () => {
-    setWaitlistHint('Web Store is coming soon. Join the waitlist for first access.');
+    setWaitlistHint('Optional. Join waitlist for launch updates only.');
     smoothScrollTo('waitlist');
     setWaitlistFocusToken((prev) => prev + 1);
     window.setTimeout(() => setWaitlistHint(null), 3200);
