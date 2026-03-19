@@ -122,6 +122,32 @@ const HERO_VIDEO_URL = (import.meta as any).env?.VITE_HERO_VIDEO_URL || '';
 const HERO_IMAGE_URL = (import.meta as any).env?.VITE_HERO_IMAGE_URL || '';
 const WAITLIST_ENDPOINT = (import.meta as any).env?.VITE_WAITLIST_ENDPOINT || '';
 const BETA_DOWNLOAD_URL = (import.meta as any).env?.VITE_BETA_DOWNLOAD_URL || '';
+const DISCOVERY_CHANNEL_OPTIONS = [
+  'Reddit',
+  'Online search (Google, Bing, DuckDuckGo, etc.)',
+  'Blog post',
+  'Newsletter',
+  'Instagram',
+  'Product Hunt',
+  'Recommendation (friend, co-worker, community)',
+  'X (formerly Twitter)',
+  'LinkedIn',
+  'Facebook',
+  'AI (ChatGPT, Gemini, Claude, Perplexity, etc.)',
+  'Indie Hackers',
+  'TikTok',
+  'Podcast',
+  'YouTube',
+  'Xiaohongshu (RED)',
+  'WeChat (Official Account / Group)',
+  'Weibo',
+  'Bilibili',
+  'Zhihu',
+  'Jike',
+  'Douyin',
+  'Baidu Search',
+  'Other',
+] as const;
 
 const smoothScrollTo = (targetId: string) => {
   document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -330,15 +356,20 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1">How did you hear about Nest?</label>
-            <input
-              type="text"
+            <label className="block text-sm font-medium text-zinc-700 mb-1">How did you discover Nest?</label>
+            <select
               value={source}
               onChange={(e) => setSource(e.target.value)}
               disabled={isLoading || joined}
               className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-              placeholder="Optional"
-            />
+            >
+              <option value="">Select one (optional)</option>
+              {DISCOVERY_CHANNEL_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
           <button
             disabled={isLoading || joined}
