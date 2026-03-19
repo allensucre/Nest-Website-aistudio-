@@ -123,6 +123,7 @@ const Nav = () => {
 const HERO_VIDEO_URL = (import.meta as any).env?.VITE_HERO_VIDEO_URL || '';
 const HERO_IMAGE_URL = (import.meta as any).env?.VITE_HERO_IMAGE_URL || '';
 const WAITLIST_ENDPOINT = (import.meta as any).env?.VITE_WAITLIST_ENDPOINT || '';
+const BETA_DOWNLOAD_URL = (import.meta as any).env?.VITE_BETA_DOWNLOAD_URL || '';
 
 const smoothScrollTo = (targetId: string) => {
   document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -463,6 +464,8 @@ const UseCases = () => {
 };
 
 const BetaSteps = () => {
+  const downloadHref = BETA_DOWNLOAD_URL || 'mailto:sucre2046@gmail.com?subject=Nest%20Beta%20Package%20Request';
+  const downloadLabel = BETA_DOWNLOAD_URL ? 'Download Beta v0.8.2' : 'Request Beta Package by Email';
   const steps = [
     {
       title: "Download the Package",
@@ -516,10 +519,15 @@ const BetaSteps = () => {
             </div>
             <h3 className="text-2xl font-bold mb-4">Ready to try?</h3>
             <p className="text-zinc-400 mb-8">Download the beta package (v0.8.2)</p>
-            <button className="w-full bg-white text-zinc-900 py-4 rounded-xl font-bold hover:bg-zinc-100 transition-all flex items-center justify-center gap-2">
+            <a
+              href={downloadHref}
+              target={downloadHref.startsWith('http') ? '_blank' : undefined}
+              rel={downloadHref.startsWith('http') ? 'noopener noreferrer' : undefined}
+              className="w-full bg-white text-zinc-900 py-4 rounded-xl font-bold hover:bg-zinc-100 transition-all flex items-center justify-center gap-2"
+            >
               <Download size={20} />
-              Download Beta v0.8.2
-            </button>
+              {downloadLabel}
+            </a>
             <p className="mt-4 text-xs text-zinc-500">Compatible with Chrome, Edge, and Brave</p>
           </div>
         </div>
@@ -529,6 +537,35 @@ const BetaSteps = () => {
 };
 
 const Feedback = () => {
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
+
+  const handleFeedbackSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFormError('');
+    setFormSuccess('');
+
+    const trimmedEmail = email.trim();
+    const trimmedMessage = message.trim();
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+
+    if (!emailValid) {
+      setFormError('Please enter a valid email.');
+      return;
+    }
+    if (!trimmedMessage) {
+      setFormError('Please enter your feedback message.');
+      return;
+    }
+
+    const subject = encodeURIComponent('Nest Beta Feedback');
+    const body = encodeURIComponent(`From: ${trimmedEmail}\n\n${trimmedMessage}`);
+    window.location.href = `mailto:sucre2046@gmail.com?subject=${subject}&body=${body}`;
+    setFormSuccess('Feedback draft opened in your email client.');
+  };
+
   return (
     <section className="py-24 px-6">
       <div className="max-w-7xl mx-auto bg-zinc-50 rounded-[2.5rem] p-12 md:p-20 flex flex-col md:flex-row items-center gap-12">
@@ -560,18 +597,32 @@ const Feedback = () => {
           </div>
         </div>
         <div className="w-full md:w-1/3 bg-white p-8 rounded-3xl shadow-xl border border-zinc-200">
-          <form className="space-y-4" onSubmit={e => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={handleFeedbackSubmit}>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
-              <input type="email" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10" placeholder="you@example.com" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+                placeholder="you@example.com"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Message</label>
-              <textarea rows={4} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10" placeholder="How can I improve?" />
+              <textarea
+                rows={4}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+                placeholder="How can I improve?"
+              />
             </div>
             <button className="w-full bg-zinc-900 text-white py-3 rounded-lg font-semibold hover:bg-zinc-800 transition-all">
               Send Feedback
             </button>
+            {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
+            {formSuccess ? <p className="text-sm text-emerald-700">{formSuccess}</p> : null}
           </form>
         </div>
       </div>
