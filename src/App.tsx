@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Chrome, 
@@ -42,6 +42,7 @@ const Nav = () => {
   const navLinks = [
     { name: 'How it works', href: '#how-it-works' },
     { name: 'Use Cases', href: '#use-cases' },
+    { name: 'Join waitlist', href: '#waitlist' },
     { name: 'Install', href: '#install' },
     { name: 'FAQ', href: '#faq' },
   ];
@@ -52,9 +53,7 @@ const Nav = () => {
     }`}>
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center">
-            <Layers className="text-white w-5 h-5" />
-          </div>
+          <img src="/assets/logo-nest-mark.svg" alt="Nest logo" className="w-8 h-8 rounded-lg" />
           <span className="text-xl font-semibold tracking-tight text-zinc-900">Nest</span>
         </div>
 
@@ -119,7 +118,20 @@ const Nav = () => {
   );
 };
 
-const Hero = () => {
+const HERO_VIDEO_URL = (import.meta as any).env?.VITE_HERO_VIDEO_URL || '';
+const HERO_IMAGE_URL = (import.meta as any).env?.VITE_HERO_IMAGE_URL || '';
+const WAITLIST_ENDPOINT = (import.meta as any).env?.VITE_WAITLIST_ENDPOINT || '';
+const BETA_DOWNLOAD_URL = (import.meta as any).env?.VITE_BETA_DOWNLOAD_URL || '';
+
+const smoothScrollTo = (targetId: string) => {
+  document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+const Hero = ({ onComingSoonClick }: { onComingSoonClick: () => void }) => {
+  const [videoLoading, setVideoLoading] = useState(true);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const hasVideo = !!HERO_VIDEO_URL && !videoFailed;
+
   return (
     <section className="pt-32 pb-20 px-6 overflow-hidden">
       <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
@@ -151,6 +163,9 @@ const Hero = () => {
         >
           Keep related tabs together, build a clear Snapshot, and Resume work without rebuilding from scratch.
         </motion.p>
+        <p className="text-sm text-zinc-500 mb-6">
+          Website access is open. Extension access is currently invite-code gated.
+        </p>
 
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -167,12 +182,13 @@ const Hero = () => {
             <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
           </a>
           <div className="relative group">
-            <button 
-              disabled
-              className="flex items-center gap-2 bg-white border border-zinc-200 text-zinc-400 px-8 py-4 rounded-full text-base font-semibold cursor-not-allowed"
+            <button
+              type="button"
+              onClick={onComingSoonClick}
+              className="flex items-center gap-2 bg-white border border-zinc-200 text-zinc-500 px-8 py-4 rounded-full text-base font-semibold hover:bg-zinc-50 transition-colors"
             >
               <Chrome size={20} />
-              Add to Chrome
+              Add to Chrome (Coming soon)
             </button>
             <span className="absolute -top-3 -right-2 bg-zinc-100 text-zinc-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-200">
               COMING SOON
@@ -180,23 +196,166 @@ const Hero = () => {
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.5 }}
           className="mt-20 relative w-full max-w-5xl aspect-video rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden bg-black"
         >
-          <iframe
-            width="100%"
-            height="100%"
-            src="https://www.youtube.com/embed/dnIHMHdJb-g"
-            title="Nest Demo"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            className="absolute inset-0"
-          ></iframe>
+          {hasVideo ? (
+            <>
+              <video
+                className="absolute inset-0 h-full w-full object-cover"
+                autoPlay
+                muted
+                loop
+                controls
+                playsInline
+                poster={HERO_IMAGE_URL || undefined}
+                onCanPlay={() => setVideoLoading(false)}
+                onError={() => {
+                  setVideoFailed(true);
+                  setVideoLoading(false);
+                }}
+              >
+                <source src={HERO_VIDEO_URL} />
+              </video>
+              {videoLoading ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm text-white">
+                  Product walkthrough loading...
+                </div>
+              ) : null}
+            </>
+          ) : HERO_IMAGE_URL ? (
+            <img src={HERO_IMAGE_URL} alt="Nest product walkthrough" className="absolute inset-0 h-full w-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-zinc-300">
+              Product walkthrough preview (Save -&gt; Snapshot -&gt; Resume)
+            </div>
+          )}
         </motion.div>
+      </div>
+    </section>
+  );
+};
+
+const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string | null }) => {
+  const emailRef = useRef<HTMLInputElement>(null);
+  const [workEmail, setWorkEmail] = useState('');
+  const [useCase, setUseCase] = useState('');
+  const [source, setSource] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [joined, setJoined] = useState(false);
+
+  useEffect(() => {
+    if (!focusToken) return;
+    emailRef.current?.focus();
+  }, [focusToken]);
+
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isLoading || joined) return;
+    setEmailError('');
+    setSubmitError('');
+    const email = workEmail.trim();
+    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!valid) {
+      setEmailError('Please enter a valid email.');
+      emailRef.current?.focus();
+      return;
+    }
+    setIsLoading(true);
+    try {
+      if (WAITLIST_ENDPOINT) {
+        const res = await fetch(WAITLIST_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workEmail: email, useCase, source }),
+        });
+        if (!res.ok) {
+          throw new Error('submit_failed');
+        }
+      } else {
+        await new Promise((resolve) => window.setTimeout(resolve, 650));
+      }
+      setJoined(true);
+    } catch {
+      setSubmitError('Something went wrong. Try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <section id="waitlist" className="py-20 px-6 bg-zinc-50 border-y border-zinc-200">
+      <div className="max-w-3xl mx-auto">
+        <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-4">Join the waitlist</h2>
+        <p className="text-zinc-600 mb-1">Get notified when Add to Chrome is live.</p>
+        <p className="text-sm text-zinc-500 mb-6">Optional. For launch updates only. Manual Install (Beta) is available now.</p>
+        {topHint ? (
+          <div className="mb-4 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
+            {topHint}
+          </div>
+        ) : null}
+        <form className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6" onSubmit={onSubmit}>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Work email</label>
+            <input
+              ref={emailRef}
+              type="email"
+              value={workEmail}
+              onChange={(e) => setWorkEmail(e.target.value)}
+              disabled={isLoading || joined}
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+              placeholder="you@example.com"
+            />
+            {emailError ? <p className="mt-2 text-sm text-red-600">{emailError}</p> : null}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Use case</label>
+            <select
+              value={useCase}
+              onChange={(e) => setUseCase(e.target.value)}
+              disabled={isLoading || joined}
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+            >
+              <option value="">Select one (optional)</option>
+              <option value="Research synthesis">Research synthesis</option>
+              <option value="Product decision tracking">Product decision tracking</option>
+              <option value="Engineering debugging context">Engineering debugging context</option>
+              <option value="Content planning and writing">Content planning and writing</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">How did you hear about Nest?</label>
+            <input
+              type="text"
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              disabled={isLoading || joined}
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+              placeholder="Optional"
+            />
+          </div>
+          <button
+            disabled={isLoading || joined}
+            className="w-full bg-zinc-900 text-white py-3 rounded-lg font-semibold hover:bg-zinc-800 transition-all disabled:opacity-60"
+          >
+            {isLoading ? 'Joining...' : joined ? 'Joined' : 'Join waitlist'}
+          </button>
+          <p className="text-xs text-zinc-500">We only use your email for launch updates.</p>
+          {submitError ? <p className="text-sm text-red-600">{submitError}</p> : null}
+          {joined ? (
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+              <p className="font-semibold">You're on the list.</p>
+              <p className="mt-1">We’ll email you when Add to Chrome is live.</p>
+              <a href="#install" className="mt-2 inline-block underline">Try Manual Install (Beta)</a>
+            </div>
+          ) : null}
+        </form>
       </div>
     </section>
   );
@@ -307,6 +466,8 @@ const UseCases = () => {
 };
 
 const BetaSteps = () => {
+  const downloadHref = BETA_DOWNLOAD_URL || 'mailto:sucre2046@gmail.com?subject=Nest%20Beta%20Package%20Request';
+  const downloadLabel = BETA_DOWNLOAD_URL ? 'Download Beta v0.8.2' : 'Request Beta Package by Email';
   const steps = [
     {
       title: "Download the Package",
@@ -337,6 +498,9 @@ const BetaSteps = () => {
           <p className="text-zinc-400 max-w-2xl mx-auto text-lg">
             Nest is currently in manual beta. Follow these simple steps to install it and start archiving your context today.
           </p>
+          <p className="text-zinc-400/80 max-w-2xl mx-auto text-sm mt-3">
+            You can follow install instructions directly. Invite code check happens inside the extension.
+          </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-12">
@@ -360,10 +524,15 @@ const BetaSteps = () => {
             </div>
             <h3 className="text-2xl font-bold mb-4">Ready to try?</h3>
             <p className="text-zinc-400 mb-8">Download the beta package (v0.8.2)</p>
-            <button className="w-full bg-white text-zinc-900 py-4 rounded-xl font-bold hover:bg-zinc-100 transition-all flex items-center justify-center gap-2">
+            <a
+              href={downloadHref}
+              target={downloadHref.startsWith('http') ? '_blank' : undefined}
+              rel={downloadHref.startsWith('http') ? 'noopener noreferrer' : undefined}
+              className="w-full bg-white text-zinc-900 py-4 rounded-xl font-bold hover:bg-zinc-100 transition-all flex items-center justify-center gap-2"
+            >
               <Download size={20} />
-              Download Beta v0.8.2
-            </button>
+              {downloadLabel}
+            </a>
             <p className="mt-4 text-xs text-zinc-500">Compatible with Chrome, Edge, and Brave</p>
           </div>
         </div>
@@ -373,6 +542,35 @@ const BetaSteps = () => {
 };
 
 const Feedback = () => {
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
+
+  const handleFeedbackSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFormError('');
+    setFormSuccess('');
+
+    const trimmedEmail = email.trim();
+    const trimmedMessage = message.trim();
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+
+    if (!emailValid) {
+      setFormError('Please enter a valid email.');
+      return;
+    }
+    if (!trimmedMessage) {
+      setFormError('Please enter your feedback message.');
+      return;
+    }
+
+    const subject = encodeURIComponent('Nest Beta Feedback');
+    const body = encodeURIComponent(`From: ${trimmedEmail}\n\n${trimmedMessage}`);
+    window.location.href = `mailto:sucre2046@gmail.com?subject=${subject}&body=${body}`;
+    setFormSuccess('Feedback draft opened in your email client.');
+  };
+
   return (
     <section className="py-24 px-6">
       <div className="max-w-7xl mx-auto bg-zinc-50 rounded-[2.5rem] p-12 md:p-20 flex flex-col md:flex-row items-center gap-12">
@@ -404,18 +602,32 @@ const Feedback = () => {
           </div>
         </div>
         <div className="w-full md:w-1/3 bg-white p-8 rounded-3xl shadow-xl border border-zinc-200">
-          <form className="space-y-4" onSubmit={e => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={handleFeedbackSubmit}>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
-              <input type="email" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10" placeholder="you@example.com" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+                placeholder="you@example.com"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Message</label>
-              <textarea rows={4} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10" placeholder="How can I improve?" />
+              <textarea
+                rows={4}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+                placeholder="How can I improve?"
+              />
             </div>
             <button className="w-full bg-zinc-900 text-white py-3 rounded-lg font-semibold hover:bg-zinc-800 transition-all">
               Send Feedback
             </button>
+            {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
+            {formSuccess ? <p className="text-sm text-emerald-700">{formSuccess}</p> : null}
           </form>
         </div>
       </div>
@@ -442,6 +654,10 @@ const FAQ = () => {
     {
       q: "Can I export my data?",
       a: "Yes! You can export your entire archive as a structured JSON file or a readable Markdown document at any time from the settings menu."
+    },
+    {
+      q: "Do I need waitlist to use Nest?",
+      a: "No. Waitlist is optional. The only hard gate is extension invite code."
     }
   ];
 
@@ -486,15 +702,14 @@ const Footer = () => {
     <footer className="py-12 px-6 border-t border-zinc-200">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-zinc-900 rounded flex items-center justify-center">
-            <Layers className="text-white w-4 h-4" />
-          </div>
+          <img src="/assets/logo-nest-mark.svg" alt="Nest logo" className="w-6 h-6 rounded" />
           <span className="text-lg font-semibold tracking-tight text-zinc-900">Nest</span>
         </div>
         
         <div className="flex gap-8 text-sm text-zinc-500">
           <a href="#" className="hover:text-zinc-900 transition-colors">Privacy</a>
           <a href="#" className="hover:text-zinc-900 transition-colors">Terms</a>
+          <a href="#waitlist" className="hover:text-zinc-900 transition-colors">Get launch updates</a>
           <a href="mailto:sucre2046@gmail.com" className="hover:text-zinc-900 transition-colors">Contact</a>
         </div>
 
@@ -520,12 +735,23 @@ const Footer = () => {
 // --- Main App ---
 
 export default function App() {
+  const [waitlistFocusToken, setWaitlistFocusToken] = useState(0);
+  const [waitlistHint, setWaitlistHint] = useState<string | null>(null);
+
+  const handleComingSoonClick = () => {
+    setWaitlistHint('Optional. Join waitlist for launch updates only.');
+    smoothScrollTo('waitlist');
+    setWaitlistFocusToken((prev) => prev + 1);
+    window.setTimeout(() => setWaitlistHint(null), 3200);
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-zinc-900 selection:bg-zinc-900 selection:text-white">
       <Nav />
       
       <main>
-        <Hero />
+        <Hero onComingSoonClick={handleComingSoonClick} />
+        <Waitlist focusToken={waitlistFocusToken} topHint={waitlistHint} />
         <HowItWorks />
         <UseCases />
         <BetaSteps />
