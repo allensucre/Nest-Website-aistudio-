@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Chrome, 
@@ -42,6 +42,7 @@ const Nav = () => {
   const navLinks = [
     { name: 'How it works', href: '#how-it-works' },
     { name: 'Use Cases', href: '#use-cases' },
+    { name: 'Join waitlist', href: '#waitlist' },
     { name: 'Install', href: '#install' },
     { name: 'FAQ', href: '#faq' },
   ];
@@ -119,7 +120,19 @@ const Nav = () => {
   );
 };
 
-const Hero = () => {
+const HERO_VIDEO_URL = (import.meta as any).env?.VITE_HERO_VIDEO_URL || '';
+const HERO_IMAGE_URL = (import.meta as any).env?.VITE_HERO_IMAGE_URL || '';
+const WAITLIST_ENDPOINT = (import.meta as any).env?.VITE_WAITLIST_ENDPOINT || '';
+
+const smoothScrollTo = (targetId: string) => {
+  document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+const Hero = ({ onComingSoonClick }: { onComingSoonClick: () => void }) => {
+  const [videoLoading, setVideoLoading] = useState(true);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const hasVideo = !!HERO_VIDEO_URL && !videoFailed;
+
   return (
     <section className="pt-32 pb-20 px-6 overflow-hidden">
       <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
@@ -167,12 +180,13 @@ const Hero = () => {
             <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
           </a>
           <div className="relative group">
-            <button 
-              disabled
-              className="flex items-center gap-2 bg-white border border-zinc-200 text-zinc-400 px-8 py-4 rounded-full text-base font-semibold cursor-not-allowed"
+            <button
+              type="button"
+              onClick={onComingSoonClick}
+              className="flex items-center gap-2 bg-white border border-zinc-200 text-zinc-500 px-8 py-4 rounded-full text-base font-semibold hover:bg-zinc-50 transition-colors"
             >
               <Chrome size={20} />
-              Add to Chrome
+              Add to Chrome (Coming soon)
             </button>
             <span className="absolute -top-3 -right-2 bg-zinc-100 text-zinc-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-200">
               COMING SOON
@@ -180,23 +194,165 @@ const Hero = () => {
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.5 }}
           className="mt-20 relative w-full max-w-5xl aspect-video rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden bg-black"
         >
-          <iframe
-            width="100%"
-            height="100%"
-            src="https://www.youtube.com/embed/dnIHMHdJb-g"
-            title="Nest Demo"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            className="absolute inset-0"
-          ></iframe>
+          {hasVideo ? (
+            <>
+              <video
+                className="absolute inset-0 h-full w-full object-cover"
+                autoPlay
+                muted
+                loop
+                controls
+                playsInline
+                poster={HERO_IMAGE_URL || undefined}
+                onCanPlay={() => setVideoLoading(false)}
+                onError={() => {
+                  setVideoFailed(true);
+                  setVideoLoading(false);
+                }}
+              >
+                <source src={HERO_VIDEO_URL} />
+              </video>
+              {videoLoading ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm text-white">
+                  Product walkthrough loading...
+                </div>
+              ) : null}
+            </>
+          ) : HERO_IMAGE_URL ? (
+            <img src={HERO_IMAGE_URL} alt="Nest product walkthrough" className="absolute inset-0 h-full w-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-zinc-300">
+              Product walkthrough preview (Save -&gt; Snapshot -&gt; Resume)
+            </div>
+          )}
         </motion.div>
+      </div>
+    </section>
+  );
+};
+
+const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string | null }) => {
+  const emailRef = useRef<HTMLInputElement>(null);
+  const [workEmail, setWorkEmail] = useState('');
+  const [useCase, setUseCase] = useState('');
+  const [source, setSource] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [joined, setJoined] = useState(false);
+
+  useEffect(() => {
+    if (!focusToken) return;
+    emailRef.current?.focus();
+  }, [focusToken]);
+
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isLoading || joined) return;
+    setEmailError('');
+    setSubmitError('');
+    const email = workEmail.trim();
+    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!valid) {
+      setEmailError('Please enter a valid email.');
+      emailRef.current?.focus();
+      return;
+    }
+    setIsLoading(true);
+    try {
+      if (WAITLIST_ENDPOINT) {
+        const res = await fetch(WAITLIST_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workEmail: email, useCase, source }),
+        });
+        if (!res.ok) {
+          throw new Error('submit_failed');
+        }
+      } else {
+        await new Promise((resolve) => window.setTimeout(resolve, 650));
+      }
+      setJoined(true);
+    } catch {
+      setSubmitError('Something went wrong. Try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <section id="waitlist" className="py-20 px-6 bg-zinc-50 border-y border-zinc-200">
+      <div className="max-w-3xl mx-auto">
+        <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-4">Join the waitlist</h2>
+        <p className="text-zinc-600 mb-1">Get notified when Add to Chrome is live.</p>
+        <p className="text-sm text-zinc-500 mb-6">Manual Install (Beta) is available now.</p>
+        {topHint ? (
+          <div className="mb-4 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
+            {topHint}
+          </div>
+        ) : null}
+        <form className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6" onSubmit={onSubmit}>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Work email</label>
+            <input
+              ref={emailRef}
+              type="email"
+              value={workEmail}
+              onChange={(e) => setWorkEmail(e.target.value)}
+              disabled={isLoading || joined}
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+              placeholder="you@example.com"
+            />
+            {emailError ? <p className="mt-2 text-sm text-red-600">{emailError}</p> : null}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Use case</label>
+            <select
+              value={useCase}
+              onChange={(e) => setUseCase(e.target.value)}
+              disabled={isLoading || joined}
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+            >
+              <option value="">Select one (optional)</option>
+              <option value="Research">Research</option>
+              <option value="Debugging">Debugging</option>
+              <option value="Weekly tracking">Weekly tracking</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">How did you hear about Nest?</label>
+            <input
+              type="text"
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              disabled={isLoading || joined}
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+              placeholder="Optional"
+            />
+          </div>
+          <button
+            disabled={isLoading || joined}
+            className="w-full bg-zinc-900 text-white py-3 rounded-lg font-semibold hover:bg-zinc-800 transition-all disabled:opacity-60"
+          >
+            {isLoading ? 'Joining...' : joined ? 'Joined' : 'Join waitlist'}
+          </button>
+          <p className="text-xs text-zinc-500">We only use your email for launch updates.</p>
+          {submitError ? <p className="text-sm text-red-600">{submitError}</p> : null}
+          {joined ? (
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+              <p className="font-semibold">You're on the list.</p>
+              <p className="mt-1">We’ll email you when Add to Chrome is live.</p>
+              <a href="#install" className="mt-2 inline-block underline">Try Manual Install (Beta)</a>
+            </div>
+          ) : null}
+        </form>
       </div>
     </section>
   );
@@ -520,12 +676,23 @@ const Footer = () => {
 // --- Main App ---
 
 export default function App() {
+  const [waitlistFocusToken, setWaitlistFocusToken] = useState(0);
+  const [waitlistHint, setWaitlistHint] = useState<string | null>(null);
+
+  const handleComingSoonClick = () => {
+    setWaitlistHint('Web Store is coming soon. Join the waitlist for first access.');
+    smoothScrollTo('waitlist');
+    setWaitlistFocusToken((prev) => prev + 1);
+    window.setTimeout(() => setWaitlistHint(null), 3200);
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-zinc-900 selection:bg-zinc-900 selection:text-white">
       <Nav />
       
       <main>
-        <Hero />
+        <Hero onComingSoonClick={handleComingSoonClick} />
+        <Waitlist focusToken={waitlistFocusToken} topHint={waitlistHint} />
         <HowItWorks />
         <UseCases />
         <BetaSteps />
