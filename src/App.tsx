@@ -70,6 +70,7 @@ const Nav = () => {
           ))}
           <a 
             href="#install" 
+            onClick={() => trackEvent('website_cta_click', { section: 'nav', label: 'Get Started', target: 'manual_install' })}
             className="bg-zinc-900 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-zinc-800 transition-all shadow-sm"
           >
             Get Started
@@ -106,8 +107,11 @@ const Nav = () => {
             ))}
             <a 
               href="#install" 
+              onClick={() => {
+                trackEvent('website_cta_click', { section: 'nav_mobile', label: 'Get Started', target: 'manual_install' });
+                setMobileMenuOpen(false);
+              }}
               className="bg-zinc-900 text-white px-4 py-3 rounded-xl text-center font-medium"
-              onClick={() => setMobileMenuOpen(false)}
             >
               Get Started
             </a>
@@ -122,6 +126,7 @@ const HERO_VIDEO_URL = (import.meta as any).env?.VITE_HERO_VIDEO_URL || '';
 const HERO_IMAGE_URL = (import.meta as any).env?.VITE_HERO_IMAGE_URL || '';
 const WAITLIST_ENDPOINT = (import.meta as any).env?.VITE_WAITLIST_ENDPOINT || '';
 const BETA_DOWNLOAD_URL = (import.meta as any).env?.VITE_BETA_DOWNLOAD_URL || '';
+const WAITLIST_FALLBACK_EMAIL = (import.meta as any).env?.VITE_WAITLIST_FALLBACK_EMAIL || 'sucre2046@gmail.com';
 const DISCOVERY_CHANNEL_OPTIONS = [
   'Reddit',
   'Online search (Google, Bing, DuckDuckGo, etc.)',
@@ -153,13 +158,30 @@ const smoothScrollTo = (targetId: string) => {
   document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
+const trackEvent = (eventName: string, payload: Record<string, unknown> = {}) => {
+  const eventPayload = { event: eventName, ...payload };
+  try {
+    const dataLayer = (window as any).dataLayer as Array<Record<string, unknown>> | undefined;
+    if (Array.isArray(dataLayer)) {
+      dataLayer.push(eventPayload);
+    }
+    const gtag = (window as any).gtag as ((...args: unknown[]) => void) | undefined;
+    if (typeof gtag === 'function') {
+      gtag('event', eventName, payload);
+    }
+    window.dispatchEvent(new CustomEvent('nest-analytics', { detail: eventPayload }));
+  } catch {
+    // no-op: analytics should never break UX
+  }
+};
+
 const Hero = ({ onComingSoonClick }: { onComingSoonClick: () => void }) => {
   const [videoLoading, setVideoLoading] = useState(true);
   const [videoFailed, setVideoFailed] = useState(false);
   const hasVideo = !!HERO_VIDEO_URL && !videoFailed;
 
   return (
-    <section className="pt-32 pb-20 px-6 overflow-hidden">
+    <section id="hero" className="pt-32 pb-20 px-6 overflow-hidden">
       <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -201,6 +223,7 @@ const Hero = ({ onComingSoonClick }: { onComingSoonClick: () => void }) => {
         >
           <a 
             href="#install" 
+            onClick={() => trackEvent('website_cta_click', { section: 'hero', label: 'Manual Install (Beta)', target: 'manual_install' })}
             className="group flex items-center gap-2 bg-zinc-900 text-white px-8 py-4 rounded-full text-base font-semibold hover:bg-zinc-800 transition-all shadow-lg hover:shadow-xl"
           >
             <Download size={20} />
@@ -274,6 +297,7 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
   const [submitError, setSubmitError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [joined, setJoined] = useState(false);
+  const [submissionMode, setSubmissionMode] = useState<'endpoint' | 'fallback_mailto' | null>(null);
 
   useEffect(() => {
     if (!focusToken) return;
@@ -290,9 +314,15 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
     if (!valid) {
       setEmailError('Please enter a valid email.');
       emailRef.current?.focus();
+      trackEvent('website_waitlist_submit_error', { reason: 'invalid_email' });
       return;
     }
     setIsLoading(true);
+    trackEvent('website_waitlist_submit_attempt', {
+      has_use_case: Boolean(useCase),
+      has_source: Boolean(source),
+      transport: WAITLIST_ENDPOINT ? 'endpoint' : 'fallback_mailto',
+    });
     try {
       if (WAITLIST_ENDPOINT) {
         const res = await fetch(WAITLIST_ENDPOINT, {
@@ -303,12 +333,24 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
         if (!res.ok) {
           throw new Error('submit_failed');
         }
+        setSubmissionMode('endpoint');
       } else {
-        await new Promise((resolve) => window.setTimeout(resolve, 650));
+        const subject = encodeURIComponent('Nest Website Waitlist');
+        const body = encodeURIComponent(
+          `workEmail: ${email}\nuseCase: ${useCase || 'N/A'}\nsource: ${source || 'N/A'}`
+        );
+        window.location.href = `mailto:${WAITLIST_FALLBACK_EMAIL}?subject=${subject}&body=${body}`;
+        setSubmissionMode('fallback_mailto');
       }
       setJoined(true);
+      trackEvent('website_waitlist_submit_success', {
+        transport: WAITLIST_ENDPOINT ? 'endpoint' : 'fallback_mailto',
+        has_use_case: Boolean(useCase),
+        has_source: Boolean(source),
+      });
     } catch {
       setSubmitError('Something went wrong. Try again.');
+      trackEvent('website_waitlist_submit_error', { reason: 'submit_failed', transport: 'endpoint' });
     } finally {
       setIsLoading(false);
     }
@@ -383,7 +425,33 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
             <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
               <p className="font-semibold">You're on the list.</p>
               <p className="mt-1">We’ll email you when Add to Chrome is live.</p>
-              <a href="#install" className="mt-2 inline-block underline">Try Manual Install (Beta)</a>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <a
+                  href="#install"
+                  onClick={() => trackEvent('website_cta_click', { section: 'waitlist_success', label: 'Try Manual Install (Beta)', target: 'manual_install' })}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-zinc-900 text-white px-3 py-1.5 text-xs font-semibold hover:bg-zinc-800 transition-colors"
+                >
+                  Try Manual Install (Beta)
+                </a>
+                <a
+                  href={`mailto:${WAITLIST_FALLBACK_EMAIL}`}
+                  onClick={() => trackEvent('website_cta_click', { section: 'waitlist_success', label: 'Contact Developer', target: 'contact_developer' })}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 transition-colors"
+                >
+                  Contact Developer
+                </a>
+              </div>
+              <div className="mt-3 rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-600">
+                <p>What happens next:</p>
+                <p>1. You’ll receive launch updates by email.</p>
+                <p>2. Add to Chrome is not live yet.</p>
+                <p>3. You can use Manual Install (Beta) today.</p>
+              </div>
+              {submissionMode === 'fallback_mailto' ? (
+                <p className="mt-2 text-xs text-zinc-500">
+                  Endpoint is not configured. We opened your email client to complete the fallback submission.
+                </p>
+              ) : null}
             </div>
           ) : null}
         </form>
@@ -559,6 +627,7 @@ const BetaSteps = () => {
               href={downloadHref}
               target={downloadHref.startsWith('http') ? '_blank' : undefined}
               rel={downloadHref.startsWith('http') ? 'noopener noreferrer' : undefined}
+              onClick={() => trackEvent('website_cta_click', { section: 'install', label: downloadLabel, target: 'manual_install_download' })}
               className="w-full bg-white text-zinc-900 py-4 rounded-xl font-bold hover:bg-zinc-100 transition-all flex items-center justify-center gap-2"
             >
               <Download size={20} />
@@ -769,7 +838,30 @@ export default function App() {
   const [waitlistFocusToken, setWaitlistFocusToken] = useState(0);
   const [waitlistHint, setWaitlistHint] = useState<string | null>(null);
 
+  useEffect(() => {
+    const sectionIds = ['hero', 'how-it-works', 'use-cases', 'waitlist', 'install', 'faq'];
+    const seen = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const sectionId = (entry.target as HTMLElement).id;
+          if (!sectionId || seen.has(sectionId)) return;
+          seen.add(sectionId);
+          trackEvent('website_section_view', { section: sectionId });
+        });
+      },
+      { threshold: 0.35 }
+    );
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+
   const handleComingSoonClick = () => {
+    trackEvent('website_cta_click', { section: 'global', label: 'Add to Chrome (Coming soon)', target: 'waitlist' });
     setWaitlistHint('Optional. Join waitlist for launch updates only.');
     smoothScrollTo('waitlist');
     setWaitlistFocusToken((prev) => prev + 1);
@@ -797,6 +889,7 @@ export default function App() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a 
                 href="#install" 
+                onClick={() => trackEvent('website_cta_click', { section: 'final_cta', label: 'Download Beta Now', target: 'manual_install' })}
                 className="bg-zinc-900 text-white px-10 py-5 rounded-full text-lg font-semibold hover:bg-zinc-800 transition-all shadow-xl hover:shadow-2xl"
               >
                 Download Beta Now

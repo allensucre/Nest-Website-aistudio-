@@ -16,5 +16,8 @@ View your app in AI Studio: https://ai.studio/apps/04f733ba-1da0-45d8-af95-be301
 1. Install dependencies:
    `npm install`
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+3. Configure waitlist submission:
+   - Preferred: set `VITE_WAITLIST_ENDPOINT` to your backend endpoint
+   - Fallback: set `VITE_WAITLIST_FALLBACK_EMAIL` (used when endpoint is absent)
+4. Run the app:
    `npm run dev`
