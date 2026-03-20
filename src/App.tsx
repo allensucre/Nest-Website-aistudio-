@@ -124,7 +124,8 @@ const Nav = () => {
 
 const HERO_VIDEO_URL = (import.meta as any).env?.VITE_HERO_VIDEO_URL || '';
 const HERO_IMAGE_URL = (import.meta as any).env?.VITE_HERO_IMAGE_URL || '';
-const WAITLIST_ENDPOINT = (import.meta as any).env?.VITE_WAITLIST_ENDPOINT || '';
+const SUPABASE_WAITLIST_ENDPOINT = (import.meta as any).env?.VITE_SUPABASE_WAITLIST_ENDPOINT || '';
+const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 const BETA_DOWNLOAD_URL = (import.meta as any).env?.VITE_BETA_DOWNLOAD_URL || '';
 const WAITLIST_FALLBACK_EMAIL = (import.meta as any).env?.VITE_WAITLIST_FALLBACK_EMAIL || 'sucre2046@gmail.com';
 const DISCOVERY_CHANNEL_OPTIONS = [
@@ -299,6 +300,14 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
   const [joined, setJoined] = useState(false);
   const [submissionMode, setSubmissionMode] = useState<'endpoint' | 'fallback_mailto' | null>(null);
 
+  const openFallbackMail = (email: string, selectedUseCase: string, selectedSource: string) => {
+    const subject = encodeURIComponent('Nest Website Waitlist');
+    const body = encodeURIComponent(
+      `workEmail: ${email}\nuseCase: ${selectedUseCase || 'N/A'}\nsource: ${selectedSource || 'N/A'}`
+    );
+    window.location.href = `mailto:${WAITLIST_FALLBACK_EMAIL}?subject=${subject}&body=${body}`;
+  };
+
   useEffect(() => {
     if (!focusToken) return;
     emailRef.current?.focus();
@@ -321,13 +330,17 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
     trackEvent('website_waitlist_submit_attempt', {
       has_use_case: Boolean(useCase),
       has_source: Boolean(source),
-      transport: WAITLIST_ENDPOINT ? 'endpoint' : 'fallback_mailto',
+      transport: SUPABASE_WAITLIST_ENDPOINT && SUPABASE_ANON_KEY ? 'supabase_endpoint' : 'fallback_mailto',
     });
     try {
-      if (WAITLIST_ENDPOINT) {
-        const res = await fetch(WAITLIST_ENDPOINT, {
+      if (SUPABASE_WAITLIST_ENDPOINT && SUPABASE_ANON_KEY) {
+        const res = await fetch(SUPABASE_WAITLIST_ENDPOINT, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          },
           body: JSON.stringify({ workEmail: email, useCase, source }),
         });
         if (!res.ok) {
@@ -335,22 +348,18 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
         }
         setSubmissionMode('endpoint');
       } else {
-        const subject = encodeURIComponent('Nest Website Waitlist');
-        const body = encodeURIComponent(
-          `workEmail: ${email}\nuseCase: ${useCase || 'N/A'}\nsource: ${source || 'N/A'}`
-        );
-        window.location.href = `mailto:${WAITLIST_FALLBACK_EMAIL}?subject=${subject}&body=${body}`;
+        openFallbackMail(email, useCase, source);
         setSubmissionMode('fallback_mailto');
       }
       setJoined(true);
       trackEvent('website_waitlist_submit_success', {
-        transport: WAITLIST_ENDPOINT ? 'endpoint' : 'fallback_mailto',
+        transport: SUPABASE_WAITLIST_ENDPOINT && SUPABASE_ANON_KEY ? 'supabase_endpoint' : 'fallback_mailto',
         has_use_case: Boolean(useCase),
         has_source: Boolean(source),
       });
     } catch {
       setSubmitError('Something went wrong. Try again.');
-      trackEvent('website_waitlist_submit_error', { reason: 'submit_failed', transport: 'endpoint' });
+      trackEvent('website_waitlist_submit_error', { reason: 'submit_failed', transport: 'supabase_endpoint' });
     } finally {
       setIsLoading(false);
     }
@@ -421,6 +430,23 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
           </button>
           <p className="text-xs text-zinc-500">We only use your email for launch updates.</p>
           {submitError ? <p className="text-sm text-red-600">{submitError}</p> : null}
+          {submitError ? (
+            <button
+              type="button"
+              onClick={() => {
+                const email = workEmail.trim();
+                if (!email) {
+                  emailRef.current?.focus();
+                  return;
+                }
+                openFallbackMail(email, useCase, source);
+                trackEvent('website_cta_click', { section: 'waitlist_error', label: 'Use email fallback', target: 'fallback_mailto' });
+              }}
+              className="text-xs text-zinc-600 underline hover:text-zinc-800"
+            >
+              Endpoint unavailable? Use email fallback
+            </button>
+          ) : null}
           {joined ? (
             <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
               <p className="font-semibold">You're on the list.</p>

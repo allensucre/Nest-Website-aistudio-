@@ -17,7 +17,7 @@ View your app in AI Studio: https://ai.studio/apps/04f733ba-1da0-45d8-af95-be301
    `npm install`
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Configure waitlist submission:
-   - Preferred: set `VITE_WAITLIST_ENDPOINT` to your backend endpoint
-   - Fallback: set `VITE_WAITLIST_FALLBACK_EMAIL` (used when endpoint is absent)
+   - Primary (Supabase): set `VITE_SUPABASE_WAITLIST_ENDPOINT` + `VITE_SUPABASE_ANON_KEY`
+   - Fallback: set `VITE_WAITLIST_FALLBACK_EMAIL` (only used when Supabase config is missing or manual fallback is clicked on error)
 4. Run the app:
    `npm run dev`
