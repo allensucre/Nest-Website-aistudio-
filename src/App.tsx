@@ -127,6 +127,15 @@ const HERO_IMAGE_URL = (import.meta as any).env?.VITE_HERO_IMAGE_URL || '';
 const SUPABASE_WAITLIST_ENDPOINT = (import.meta as any).env?.VITE_SUPABASE_WAITLIST_ENDPOINT || '';
 const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 const BETA_DOWNLOAD_URL = (import.meta as any).env?.VITE_BETA_DOWNLOAD_URL || '';
+const MANUAL_INSTALL_PACKAGE_URL =
+  (import.meta as any).env?.VITE_MANUAL_INSTALL_PACKAGE_URL ||
+  BETA_DOWNLOAD_URL ||
+  '/downloads/nest-beta-package-2026.03.24.zip';
+const MANUAL_INSTALL_VERSION = (import.meta as any).env?.VITE_MANUAL_INSTALL_VERSION || 'beta-2026.03.24';
+const MANUAL_INSTALL_UPDATED_AT = (import.meta as any).env?.VITE_MANUAL_INSTALL_UPDATED_AT || '2026-03-24';
+const MANUAL_INSTALL_SIZE = (import.meta as any).env?.VITE_MANUAL_INSTALL_SIZE || '465833 bytes (455 KB)';
+const MANUAL_INSTALL_SHA256 =
+  (import.meta as any).env?.VITE_MANUAL_INSTALL_SHA256 || 'eb54fa68f32fd361cda485838a2f70b0724298c14508e71b42bc42cd5cbaf552';
 const WAITLIST_FALLBACK_EMAIL = (import.meta as any).env?.VITE_WAITLIST_FALLBACK_EMAIL || 'sucre2046@gmail.com';
 const DISCOVERY_CHANNEL_OPTIONS = [
   'Reddit',
@@ -591,26 +600,92 @@ const UseCases = () => {
 };
 
 const BetaSteps = () => {
-  const downloadHref = BETA_DOWNLOAD_URL || 'mailto:sucre2046@gmail.com?subject=Nest%20Beta%20Package%20Request';
-  const downloadLabel = BETA_DOWNLOAD_URL ? 'Download Beta v0.8.2' : 'Request Beta Package by Email';
+  const [openStepIndex, setOpenStepIndex] = useState(0);
+  const [checkedItems, setCheckedItems] = useState<number[]>([]);
+  const [openTroubleshooting, setOpenTroubleshooting] = useState<number[]>([]);
+
+  const downloadHref =
+    MANUAL_INSTALL_PACKAGE_URL || `mailto:${WAITLIST_FALLBACK_EMAIL}?subject=Nest%20Beta%20Package%20Request`;
+  const downloadLabel = MANUAL_INSTALL_PACKAGE_URL ? 'Direct Download Package' : 'Request Package by Email';
+  const hasDirectDownload = downloadHref.startsWith('http') || downloadHref.startsWith('/');
+
   const steps = [
     {
-      title: "Download the Package",
-      content: "Download the latest Nest Beta zip file from the repository. It contains all the necessary extension files."
+      title: 'Step 1: Download the package',
+      action: 'Download the latest Nest beta zip package.',
+      outcome: 'You should have a local .zip file ready to extract.',
     },
     {
-      title: "Enable Developer Mode",
-      content: "Open Chrome Extensions (chrome://extensions) and toggle the 'Developer mode' switch in the top right corner."
+      title: 'Step 2: Open chrome://extensions',
+      action: 'Open chrome://extensions in your browser.',
+      outcome: 'You should see the extension management page.',
     },
     {
-      title: "Load Unpacked",
-      content: "Click the 'Load unpacked' button and select the folder where you extracted the Nest zip file."
+      title: 'Step 3: Enable Developer Mode',
+      action: "Enable the 'Developer mode' toggle in the top-right.",
+      outcome: "'Load unpacked' button should become visible.",
     },
     {
-      title: "Pin & Start Archiving",
-      content: "Pin Nest to your toolbar and start saving context with a single click or shortcut."
-    }
+      title: 'Step 4: Load unpacked',
+      action: "Click 'Load unpacked' and select your extracted package folder.",
+      outcome: 'Nest should appear in your extension list.',
+    },
+    {
+      title: 'Step 5: Save your first context',
+      action: 'Pin Nest to toolbar and save one real tab set.',
+      outcome: 'You should see Snapshot-ready feedback in product.',
+    },
   ];
+
+  const verifyItems = [
+    'Nest appears in chrome://extensions and is enabled.',
+    'Nest icon is visible in toolbar (or pinned).',
+    'You can Save one tab set and see Snapshot ready.',
+  ];
+
+  const troubleshootingItems = [
+    {
+      title: 'Load unpacked failed',
+      detail: 'Unzip first, then pick the folder that contains manifest.json.',
+    },
+    {
+      title: 'Cannot see extension icon',
+      detail: 'Open extension menu in Chrome toolbar and pin Nest.',
+    },
+    {
+      title: 'Permissions are disabled',
+      detail: 'Open extension details and enable permissions, then reload the active tab.',
+    },
+    {
+      title: 'Installed but Save does not work',
+      detail: 'Refresh target tabs and retry. If still blocked, disable/enable Nest once.',
+    },
+  ];
+
+  const toggleVerify = (index: number) => {
+    setCheckedItems((prev) => {
+      const exists = prev.includes(index);
+      const next = exists ? prev.filter((x) => x !== index) : [...prev, index];
+      trackEvent('website_manual_install_verify_toggle', {
+        item_index: index + 1,
+        checked: !exists,
+        completed_count: next.length,
+      });
+      return next;
+    });
+  };
+
+  const toggleTroubleshooting = (index: number) => {
+    setOpenTroubleshooting((prev) => {
+      const exists = prev.includes(index);
+      const next = exists ? prev.filter((x) => x !== index) : [...prev, index];
+      trackEvent('website_manual_install_troubleshooting_toggle', {
+        item_index: index + 1,
+        expanded: !exists,
+      });
+      return next;
+    });
+  };
 
   return (
     <section id="install" className="py-24 px-6 bg-zinc-900 text-white rounded-[3rem] mx-4 my-12 overflow-hidden relative">
@@ -628,38 +703,117 @@ const BetaSteps = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-12">
-          <div className="space-y-8">
-            {steps.map((step, idx) => (
-              <div key={idx} className="flex gap-6">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center font-bold text-white">
-                  {idx + 1}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-2">{step.title}</h3>
-                  <p className="text-zinc-400 leading-relaxed">{step.content}</p>
-                </div>
-              </div>
-            ))}
+        <div className="space-y-8">
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+            <h3 className="text-2xl font-bold mb-3">Download package</h3>
+            <p className="text-zinc-400 mb-5">Direct download is primary. Email fallback remains available.</p>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={downloadHref}
+                target={hasDirectDownload ? '_blank' : undefined}
+                rel={hasDirectDownload ? 'noopener noreferrer' : undefined}
+                onClick={() => {
+                  trackEvent('website_manual_install_download_click', {
+                    placement: 'install',
+                    has_direct_url: hasDirectDownload,
+                  });
+                  trackEvent('website_cta_click', {
+                    section: 'install',
+                    label: downloadLabel,
+                    target: 'manual_install_download',
+                  });
+                }}
+                className="inline-flex items-center gap-2 bg-white text-zinc-900 px-5 py-3 rounded-xl font-bold hover:bg-zinc-100 transition-all"
+              >
+                <Download size={18} />
+                {downloadLabel}
+              </a>
+              <a
+                href={`mailto:${WAITLIST_FALLBACK_EMAIL}?subject=Nest%20Beta%20Package%20Request`}
+                className="inline-flex items-center gap-2 border border-white/20 px-5 py-3 rounded-xl font-semibold text-white/85 hover:bg-white/10"
+              >
+                Email fallback
+              </a>
+            </div>
+            <div className="mt-5 grid gap-2 rounded-xl border border-white/15 bg-white/5 p-4 text-sm text-zinc-300 md:grid-cols-2">
+              <p><span className="text-white font-medium">Version:</span> {MANUAL_INSTALL_VERSION}</p>
+              <p><span className="text-white font-medium">Last Updated:</span> {MANUAL_INSTALL_UPDATED_AT}</p>
+              <p><span className="text-white font-medium">File Size:</span> {MANUAL_INSTALL_SIZE}</p>
+              <p className="break-all"><span className="text-white font-medium">SHA256:</span> {MANUAL_INSTALL_SHA256}</p>
+            </div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center text-center">
-            <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-2xl">
-              <Download className="text-zinc-900 w-10 h-10" />
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+            <h3 className="text-2xl font-bold mb-5">Install steps</h3>
+            <div className="space-y-3">
+              {steps.map((step, idx) => (
+                <article key={step.title} className="rounded-xl border border-white/15 bg-white/5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenStepIndex(idx);
+                      trackEvent('website_manual_install_step_click', { step_index: idx + 1, step_title: step.title });
+                    }}
+                    className="w-full flex items-center justify-between px-4 py-3 text-left"
+                  >
+                    <span className="font-semibold">{step.title}</span>
+                    {openStepIndex === idx ? <Minus size={16} /> : <Plus size={16} />}
+                  </button>
+                  {openStepIndex === idx ? (
+                    <div className="px-4 pb-4 text-sm text-zinc-300">
+                      <p>{step.action}</p>
+                      <p className="mt-1 text-zinc-400">Expected result: {step.outcome}</p>
+                    </div>
+                  ) : null}
+                </article>
+              ))}
             </div>
-            <h3 className="text-2xl font-bold mb-4">Ready to try?</h3>
-            <p className="text-zinc-400 mb-8">Download the beta package (v0.8.2)</p>
-            <a
-              href={downloadHref}
-              target={downloadHref.startsWith('http') ? '_blank' : undefined}
-              rel={downloadHref.startsWith('http') ? 'noopener noreferrer' : undefined}
-              onClick={() => trackEvent('website_cta_click', { section: 'install', label: downloadLabel, target: 'manual_install_download' })}
-              className="w-full bg-white text-zinc-900 py-4 rounded-xl font-bold hover:bg-zinc-100 transition-all flex items-center justify-center gap-2"
-            >
-              <Download size={20} />
-              {downloadLabel}
-            </a>
-            <p className="mt-4 text-xs text-zinc-500">Compatible with Chrome, Edge, and Brave</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+              <h3 className="text-2xl font-bold mb-3">Verify installation</h3>
+              <p className="text-zinc-400 mb-4">Confirm these 3 checks after install.</p>
+              <div className="space-y-2">
+                {verifyItems.map((item, idx) => {
+                  const checked = checkedItems.includes(idx);
+                  return (
+                    <button
+                      type="button"
+                      key={item}
+                      onClick={() => toggleVerify(idx)}
+                      className={`w-full rounded-xl border px-3 py-2 text-left text-sm ${
+                        checked ? 'border-white/35 bg-white/20 text-white' : 'border-white/15 bg-white/5 text-zinc-300'
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+              <h3 className="text-2xl font-bold mb-3">Troubleshooting</h3>
+              <div className="space-y-2">
+                {troubleshootingItems.map((item, idx) => {
+                  const expanded = openTroubleshooting.includes(idx);
+                  return (
+                    <article key={item.title} className="rounded-xl border border-white/15 bg-white/5">
+                      <button
+                        type="button"
+                        onClick={() => toggleTroubleshooting(idx)}
+                        className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-semibold"
+                      >
+                        <span>{item.title}</span>
+                        {expanded ? <Minus size={16} /> : <Plus size={16} />}
+                      </button>
+                      {expanded ? <p className="px-4 pb-4 text-sm text-zinc-300">{item.detail}</p> : null}
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </div>
