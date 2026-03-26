@@ -26,6 +26,7 @@ import {
   Plus,
   Minus
 } from 'lucide-react';
+import { trackEvent } from './lib/analytics';
 
 // --- Components ---
 
@@ -42,6 +43,7 @@ const Nav = () => {
   const navLinks = [
     { name: 'How it works', href: '#how-it-works' },
     { name: 'Use Cases', href: '#use-cases' },
+    { name: 'Updates', href: '/updates' },
     { name: 'Join waitlist', href: '#waitlist' },
     { name: 'Install', href: '#install' },
     { name: 'FAQ', href: '#faq' },
@@ -166,23 +168,6 @@ const DISCOVERY_CHANNEL_OPTIONS = [
 
 const smoothScrollTo = (targetId: string) => {
   document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-};
-
-const trackEvent = (eventName: string, payload: Record<string, unknown> = {}) => {
-  const eventPayload = { event: eventName, ...payload };
-  try {
-    const dataLayer = (window as any).dataLayer as Array<Record<string, unknown>> | undefined;
-    if (Array.isArray(dataLayer)) {
-      dataLayer.push(eventPayload);
-    }
-    const gtag = (window as any).gtag as ((...args: unknown[]) => void) | undefined;
-    if (typeof gtag === 'function') {
-      gtag('event', eventName, payload);
-    }
-    window.dispatchEvent(new CustomEvent('nest-analytics', { detail: eventPayload }));
-  } catch {
-    // no-op: analytics should never break UX
-  }
 };
 
 const Hero = ({ onComingSoonClick }: { onComingSoonClick: () => void }) => {
