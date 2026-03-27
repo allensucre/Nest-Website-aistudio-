@@ -596,9 +596,9 @@ const BetaSteps = () => {
 
   const steps = [
     {
-      title: 'Step 1: Download the package',
-      action: 'Download the latest Nest beta zip package.',
-      outcome: 'You should have a local .zip file ready to extract.',
+      title: 'Step 1: Download and unzip the package',
+      action: 'Download the latest Nest beta zip package, then unzip it first.',
+      outcome: 'You should have an extracted folder that contains manifest.json.',
     },
     {
       title: 'Step 2: Open chrome://extensions',
@@ -632,6 +632,10 @@ const BetaSteps = () => {
     {
       title: 'Load unpacked failed',
       detail: 'Unzip first, then pick the folder that contains manifest.json.',
+    },
+    {
+      title: 'Still seeing invite code after install',
+      detail: 'You may be running an older package. Remove old unpacked Nest versions, then load the latest extracted package again.',
     },
     {
       title: 'Cannot see extension icon',
@@ -922,7 +926,11 @@ const FAQ = () => {
     },
     {
       q: "Do I need waitlist to use Nest?",
-      a: "No. Waitlist is optional. The only hard gate is extension invite code."
+      a: "No. Waitlist is optional. Public beta access is open in the latest package."
+    },
+    {
+      q: "Why am I still asked for an invite code?",
+      a: "You are likely running an older package build. Remove old unpacked Nest extensions and reinstall the latest package from this page."
     }
   ];
 
