@@ -139,6 +139,15 @@ const MANUAL_INSTALL_SIZE = (import.meta as any).env?.VITE_MANUAL_INSTALL_SIZE |
 const MANUAL_INSTALL_SHA256 =
   (import.meta as any).env?.VITE_MANUAL_INSTALL_SHA256 || 'eb54fa68f32fd361cda485838a2f70b0724298c14508e71b42bc42cd5cbaf552';
 const WAITLIST_FALLBACK_EMAIL = (import.meta as any).env?.VITE_WAITLIST_FALLBACK_EMAIL || 'sucre2046@gmail.com';
+
+type ManualInstallMetadata = {
+  packageUrl: string;
+  version: string;
+  updatedAt: string;
+  sizeBytes: number;
+  sha256: string;
+  fallbackEmail?: string;
+};
 const DISCOVERY_CHANNEL_OPTIONS = [
   'Reddit',
   'Online search (Google, Bing, DuckDuckGo, etc.)',
@@ -588,10 +597,44 @@ const BetaSteps = () => {
   const [openStepIndex, setOpenStepIndex] = useState(0);
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
   const [openTroubleshooting, setOpenTroubleshooting] = useState<number[]>([]);
+  const [manualInstallMeta, setManualInstallMeta] = useState({
+    packageUrl: MANUAL_INSTALL_PACKAGE_URL,
+    version: MANUAL_INSTALL_VERSION,
+    updatedAt: MANUAL_INSTALL_UPDATED_AT,
+    size: MANUAL_INSTALL_SIZE,
+    sha256: MANUAL_INSTALL_SHA256,
+    fallbackEmail: WAITLIST_FALLBACK_EMAIL,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadLatestMetadata = async () => {
+      try {
+        const response = await fetch('/downloads/manual-install.latest.json', {cache: 'no-store'});
+        if (!response.ok) return;
+        const data = (await response.json()) as ManualInstallMetadata;
+        if (!data?.packageUrl || cancelled) return;
+        setManualInstallMeta({
+          packageUrl: data.packageUrl,
+          version: data.version || MANUAL_INSTALL_VERSION,
+          updatedAt: data.updatedAt || MANUAL_INSTALL_UPDATED_AT,
+          size: data.sizeBytes ? `${data.sizeBytes} bytes` : MANUAL_INSTALL_SIZE,
+          sha256: data.sha256 || MANUAL_INSTALL_SHA256,
+          fallbackEmail: data.fallbackEmail || WAITLIST_FALLBACK_EMAIL,
+        });
+      } catch {
+        // Keep env defaults when metadata fetch fails.
+      }
+    };
+    void loadLatestMetadata();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const downloadHref =
-    MANUAL_INSTALL_PACKAGE_URL || `mailto:${WAITLIST_FALLBACK_EMAIL}?subject=Nest%20Beta%20Package%20Request`;
-  const downloadLabel = MANUAL_INSTALL_PACKAGE_URL ? 'Direct Download Package' : 'Request Package by Email';
+    manualInstallMeta.packageUrl || `mailto:${manualInstallMeta.fallbackEmail}?subject=Nest%20Beta%20Package%20Request`;
+  const downloadLabel = manualInstallMeta.packageUrl ? 'Direct Download Package' : 'Request Package by Email';
   const hasDirectDownload = downloadHref.startsWith('http') || downloadHref.startsWith('/');
 
   const steps = [
@@ -718,17 +761,17 @@ const BetaSteps = () => {
                 {downloadLabel}
               </a>
               <a
-                href={`mailto:${WAITLIST_FALLBACK_EMAIL}?subject=Nest%20Beta%20Package%20Request`}
+                href={`mailto:${manualInstallMeta.fallbackEmail}?subject=Nest%20Beta%20Package%20Request`}
                 className="inline-flex items-center gap-2 border border-white/20 px-5 py-3 rounded-xl font-semibold text-white/85 hover:bg-white/10"
               >
                 Email fallback
               </a>
             </div>
             <div className="mt-5 grid gap-2 rounded-xl border border-white/15 bg-white/5 p-4 text-sm text-zinc-300 md:grid-cols-2">
-              <p><span className="text-white font-medium">Version:</span> {MANUAL_INSTALL_VERSION}</p>
-              <p><span className="text-white font-medium">Last Updated:</span> {MANUAL_INSTALL_UPDATED_AT}</p>
-              <p><span className="text-white font-medium">File Size:</span> {MANUAL_INSTALL_SIZE}</p>
-              <p className="break-all"><span className="text-white font-medium">SHA256:</span> {MANUAL_INSTALL_SHA256}</p>
+              <p><span className="text-white font-medium">Version:</span> {manualInstallMeta.version}</p>
+              <p><span className="text-white font-medium">Last Updated:</span> {manualInstallMeta.updatedAt}</p>
+              <p><span className="text-white font-medium">File Size:</span> {manualInstallMeta.size}</p>
+              <p className="break-all"><span className="text-white font-medium">SHA256:</span> {manualInstallMeta.sha256}</p>
             </div>
           </div>
 
