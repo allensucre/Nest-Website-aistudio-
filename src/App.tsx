@@ -124,8 +124,14 @@ const Nav = () => {
   );
 };
 
-const HERO_VIDEO_URL = (import.meta as any).env?.VITE_HERO_VIDEO_URL || '';
-const HERO_IMAGE_URL = (import.meta as any).env?.VITE_HERO_IMAGE_URL || '';
+const HERO_VIDEO_URL =
+  (import.meta as any).env?.VITE_HERO_VIDEO_URL ||
+  (import.meta as any).env?.VITE_WEBSITE_HERO_VIDEO_URL ||
+  '';
+const HERO_IMAGE_URL =
+  (import.meta as any).env?.VITE_HERO_IMAGE_URL ||
+  (import.meta as any).env?.VITE_WEBSITE_HERO_IMAGE_URL ||
+  '';
 const SUPABASE_WAITLIST_ENDPOINT = (import.meta as any).env?.VITE_SUPABASE_WAITLIST_ENDPOINT || '';
 const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 const BETA_DOWNLOAD_URL = (import.meta as any).env?.VITE_BETA_DOWNLOAD_URL || '';
@@ -183,6 +189,7 @@ const Hero = ({ onComingSoonClick }: { onComingSoonClick: () => void }) => {
   const [videoLoading, setVideoLoading] = useState(true);
   const [videoFailed, setVideoFailed] = useState(false);
   const hasVideo = !!HERO_VIDEO_URL && !videoFailed;
+  const isYouTubeVideo = useMemo(() => /youtube\.com|youtu\.be/.test(HERO_VIDEO_URL), []);
 
   return (
     <section id="hero" className="pt-32 pb-20 px-6 overflow-hidden">
@@ -257,22 +264,34 @@ const Hero = ({ onComingSoonClick }: { onComingSoonClick: () => void }) => {
         >
           {hasVideo ? (
             <>
-              <video
-                className="absolute inset-0 h-full w-full object-cover"
-                autoPlay
-                muted
-                loop
-                controls
-                playsInline
-                poster={HERO_IMAGE_URL || undefined}
-                onCanPlay={() => setVideoLoading(false)}
-                onError={() => {
-                  setVideoFailed(true);
-                  setVideoLoading(false);
-                }}
-              >
-                <source src={HERO_VIDEO_URL} />
-              </video>
+              {isYouTubeVideo ? (
+                <iframe
+                  className="absolute inset-0 h-full w-full"
+                  src={HERO_VIDEO_URL}
+                  title="Nest product walkthrough"
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  onLoad={() => setVideoLoading(false)}
+                />
+              ) : (
+                <video
+                  className="absolute inset-0 h-full w-full object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  controls
+                  playsInline
+                  poster={HERO_IMAGE_URL || undefined}
+                  onCanPlay={() => setVideoLoading(false)}
+                  onError={() => {
+                    setVideoFailed(true);
+                    setVideoLoading(false);
+                  }}
+                >
+                  <source src={HERO_VIDEO_URL} />
+                </video>
+              )}
               {videoLoading ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm text-white">
                   Product walkthrough loading...
