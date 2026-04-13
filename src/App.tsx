@@ -987,6 +987,10 @@ const FAQ = () => {
       a: "Yes! You can export your entire archive as a structured JSON file or a readable Markdown document at any time from the settings menu."
     },
     {
+      q: "Privacy Policy",
+      a: "Nest processes AI input only when the user explicitly triggers AI features. Before first AI use, Nest shows a prominent disclosure and asks for explicit consent. Data sent for AI may include user prompt/message and selected page content from saved sources. Nest stores local product data in browser local storage. Nest may send minimal usage analytics events. Users can revoke AI consent in product settings/options."
+    },
+    {
       q: "Do I need waitlist to use Nest?",
       a: "No. Waitlist is optional. Public beta access is open in the latest package."
     },
