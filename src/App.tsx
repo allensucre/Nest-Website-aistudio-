@@ -971,6 +971,10 @@ const FAQ = () => {
 
   const faqs = [
     {
+      q: "Privacy Policy",
+      a: "Nest processes AI input only when the user explicitly triggers AI features. Before first AI use, Nest shows a prominent disclosure and asks for explicit consent. Data sent for AI may include user prompt/message and selected page content from saved sources. Nest stores local product data in browser local storage. Nest may send minimal usage analytics events. Users can revoke AI consent in product settings/options."
+    },
+    {
       q: "Is Nest free to use?",
       a: "During the beta period, Nest is completely free. I plan to introduce a premium tier for advanced features in the future, but a robust free version will always be available."
     },
@@ -985,10 +989,6 @@ const FAQ = () => {
     {
       q: "Can I export my data?",
       a: "Yes! You can export your entire archive as a structured JSON file or a readable Markdown document at any time from the settings menu."
-    },
-    {
-      q: "Privacy Policy",
-      a: "Nest processes AI input only when the user explicitly triggers AI features. Before first AI use, Nest shows a prominent disclosure and asks for explicit consent. Data sent for AI may include user prompt/message and selected page content from saved sources. Nest stores local product data in browser local storage. Nest may send minimal usage analytics events. Users can revoke AI consent in product settings/options."
     },
     {
       q: "Do I need waitlist to use Nest?",
