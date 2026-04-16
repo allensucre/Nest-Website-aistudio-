@@ -145,6 +145,9 @@ const MANUAL_INSTALL_SIZE = (import.meta as any).env?.VITE_MANUAL_INSTALL_SIZE |
 const MANUAL_INSTALL_SHA256 =
   (import.meta as any).env?.VITE_MANUAL_INSTALL_SHA256 || 'eb54fa68f32fd361cda485838a2f70b0724298c14508e71b42bc42cd5cbaf552';
 const WAITLIST_FALLBACK_EMAIL = (import.meta as any).env?.VITE_WAITLIST_FALLBACK_EMAIL || 'sucre2046@gmail.com';
+const CHROME_WEBSTORE_URL =
+  (import.meta as any).env?.VITE_CHROME_WEBSTORE_URL ||
+  'https://chrome.google.com/webstore/detail/mekpajefpklpjlapkdommfhainodfbjl';
 
 type ManualInstallMetadata = {
   packageUrl: string;
@@ -248,11 +251,8 @@ const Hero = ({ onComingSoonClick }: { onComingSoonClick: () => void }) => {
               className="flex items-center gap-2 bg-white border border-zinc-200 text-zinc-500 px-8 py-4 rounded-full text-base font-semibold hover:bg-zinc-50 transition-colors"
             >
               <Chrome size={20} />
-              Add to Chrome (Coming soon)
+              Add to Chrome
             </button>
-            <span className="absolute -top-3 -right-2 bg-zinc-100 text-zinc-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-200">
-              COMING SOON
-            </span>
           </div>
         </motion.div>
 
@@ -391,8 +391,8 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
     <section id="waitlist" className="py-20 px-6 bg-zinc-50 border-y border-zinc-200">
       <div className="max-w-3xl mx-auto">
         <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-4">Join the waitlist</h2>
-        <p className="text-zinc-600 mb-1">Get notified when Add to Chrome is live.</p>
-        <p className="text-sm text-zinc-500 mb-6">Optional. For launch updates only. Manual Install (Beta) is available now.</p>
+        <p className="text-zinc-600 mb-1">Optional. Get product updates and beta notes by email.</p>
+        <p className="text-sm text-zinc-500 mb-6">Add to Chrome is live now. Manual Install (Beta) is also available.</p>
         {topHint ? (
           <div className="mb-4 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
             {topHint}
@@ -472,7 +472,7 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
           {joined ? (
             <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
               <p className="font-semibold">You're on the list.</p>
-              <p className="mt-1">We’ll email you when Add to Chrome is live.</p>
+              <p className="mt-1">We’ll email you product updates.</p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <a
                   href="#install"
@@ -492,8 +492,8 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
               <div className="mt-3 rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-600">
                 <p>What happens next:</p>
                 <p>1. You’ll receive launch updates by email.</p>
-                <p>2. Add to Chrome is not live yet.</p>
-                <p>3. You can use Manual Install (Beta) today.</p>
+                <p>2. Add to Chrome is already available.</p>
+                <p>3. You can also use Manual Install (Beta) today.</p>
               </div>
               {submissionMode === 'fallback_mailto' ? (
                 <p className="mt-2 text-xs text-zinc-500">
@@ -1100,11 +1100,8 @@ export default function App() {
   }, []);
 
   const handleComingSoonClick = () => {
-    trackEvent('website_cta_click', { section: 'global', label: 'Add to Chrome (Coming soon)', target: 'waitlist' });
-    setWaitlistHint('Optional. Join waitlist for launch updates only.');
-    smoothScrollTo('waitlist');
-    setWaitlistFocusToken((prev) => prev + 1);
-    window.setTimeout(() => setWaitlistHint(null), 3200);
+    trackEvent('website_cta_click', { section: 'global', label: 'Add to Chrome', target: CHROME_WEBSTORE_URL });
+    window.open(CHROME_WEBSTORE_URL, '_blank', 'noopener,noreferrer');
   };
 
   return (
