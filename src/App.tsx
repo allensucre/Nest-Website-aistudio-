@@ -235,25 +235,25 @@ const Hero = ({ onComingSoonClick }: { onComingSoonClick: () => void }) => {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="flex flex-col sm:flex-row items-center gap-4"
         >
-          <a 
-            href="#install" 
-            onClick={() => trackEvent('website_cta_click', { section: 'hero', label: 'Manual Install (Beta)', target: 'manual_install' })}
-            className="group flex items-center gap-2 bg-zinc-900 text-white px-8 py-4 rounded-full text-base font-semibold hover:bg-zinc-800 transition-all shadow-lg hover:shadow-xl"
-          >
-            <Download size={20} />
-            Manual Install (Beta)
-            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </a>
           <div className="relative group">
             <button
               type="button"
               onClick={onComingSoonClick}
-              className="flex items-center gap-2 bg-white border border-zinc-200 text-zinc-500 px-8 py-4 rounded-full text-base font-semibold hover:bg-zinc-50 transition-colors"
+              className="flex items-center gap-2 bg-zinc-900 text-white px-8 py-4 rounded-full text-base font-semibold hover:bg-zinc-800 transition-all shadow-lg hover:shadow-xl"
             >
               <Chrome size={20} />
               Add to Chrome
             </button>
           </div>
+          <a 
+            href="#install" 
+            onClick={() => trackEvent('website_cta_click', { section: 'hero', label: 'Manual Install', target: 'manual_install' })}
+            className="group flex items-center gap-2 bg-white border border-zinc-200 text-zinc-700 px-8 py-4 rounded-full text-base font-semibold hover:bg-zinc-50 transition-colors"
+          >
+            <Download size={20} />
+            Manual Install
+            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+          </a>
         </motion.div>
 
         <motion.div
@@ -476,10 +476,10 @@ const Waitlist = ({ focusToken, topHint }: { focusToken: number; topHint: string
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <a
                   href="#install"
-                  onClick={() => trackEvent('website_cta_click', { section: 'waitlist_success', label: 'Try Manual Install (Beta)', target: 'manual_install' })}
+                  onClick={() => trackEvent('website_cta_click', { section: 'waitlist_success', label: 'Try Manual Install', target: 'manual_install' })}
                   className="inline-flex items-center gap-1.5 rounded-md bg-zinc-900 text-white px-3 py-1.5 text-xs font-semibold hover:bg-zinc-800 transition-colors"
                 >
-                  Try Manual Install (Beta)
+                  Try Manual Install
                 </a>
                 <a
                   href={`mailto:${WAITLIST_FALLBACK_EMAIL}`}
